@@ -1,14 +1,14 @@
 import { PageHeader } from '../components/PageHeader'
 
-export function DashboardPage() {
+export function ContainersPage() {
   return (
     <>
       <PageHeader
-        title="Station Inventory Overview"
-        description="Container balances and daily activity at a glance."
+        title="Containers"
+        description="Every physical container, its type, and where it is right now."
       />
       <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
-        Dashboard cards will go here.
+        The container list will go here.
       </div>
     </>
   )
