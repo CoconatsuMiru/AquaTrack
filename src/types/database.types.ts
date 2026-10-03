@@ -165,20 +165,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      assign_container: {
+      assign_containers: {
         Args: {
-          p_container_id: string
+          p_container_ids: string[]
           p_customer_id: string
           p_notes?: string
         }
-        Returns: Database['public']['Tables']['transactions']['Row']
+        Returns: number
       }
-      return_container: {
+      return_containers: {
         Args: {
-          p_container_id: string
+          p_container_ids: string[]
           p_notes?: string
         }
-        Returns: Database['public']['Tables']['transactions']['Row']
+        Returns: number
       }
     }
     Enums: {

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useDataVersion } from '../lib/dataRefresh'
 import { getErrorMessage } from '../lib/errors'
 
 // Pass a stable function (like a service function), not an inline arrow function,
@@ -8,6 +9,9 @@ export function useAsyncData<T>(fetcher: () => Promise<T>, initialData: T) {
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
   const [reloadCount, setReloadCount] = useState(0)
+
+  // Changes whenever notifyDataChanged() is called anywhere in the app
+  const dataVersion = useDataVersion()
 
   useEffect(() => {
     let ignore = false
@@ -31,7 +35,7 @@ export function useAsyncData<T>(fetcher: () => Promise<T>, initialData: T) {
     return () => {
       ignore = true
     }
-  }, [fetcher, reloadCount])
+  }, [fetcher, reloadCount, dataVersion])
 
   const reload = useCallback(() => setReloadCount((count) => count + 1), [])
 
