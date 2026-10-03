@@ -1,11 +1,15 @@
 import type { Database } from './database.types'
 
 type Tables = Database['public']['Tables']
+type Views = Database['public']['Views']
 
 export type ContainerType = Tables['container_types']['Row']
 export type Customer = Tables['customers']['Row']
 export type Container = Tables['containers']['Row']
 export type Transaction = Tables['transactions']['Row']
+
+// One line of the history screen: a transaction with its container and customer details
+export type TransactionHistoryRow = Views['transaction_history']['Row']
 
 export type ContainerStatus = Container['status']
 export type TransactionType = Transaction['transaction_type']

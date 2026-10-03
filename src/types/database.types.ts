@@ -162,7 +162,22 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      transaction_history: {
+        Row: {
+          id: string
+          transaction_number: number
+          transaction_type: 'assign' | 'return'
+          created_at: string
+          notes: string | null
+          container_id: string
+          container_number: string
+          container_type_name: string
+          customer_id: string
+          customer_name: string
+          customer_phone: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       assign_containers: {
