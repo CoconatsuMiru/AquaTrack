@@ -19,6 +19,7 @@ export function ContainerTypeModal({ containerType, onClose, onSaved }: Containe
 
   const [name, setName] = useState(containerType?.name ?? '')
   const [description, setDescription] = useState(containerType?.description ?? '')
+  const [identifierKey, setIdentifierKey] = useState(containerType?.identifier_key ?? '')
   const [isActive, setIsActive] = useState(containerType?.is_active ?? true)
   const [errorMessage, setErrorMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -31,6 +32,7 @@ export function ContainerTypeModal({ containerType, onClose, onSaved }: Containe
     const values = {
       name: name.trim(),
       description: description.trim() || null,
+      identifier_key: identifierKey,
     }
 
     try {
@@ -63,7 +65,7 @@ export function ContainerTypeModal({ containerType, onClose, onSaved }: Containe
             type="text"
             value={name}
             onChange={(event) => setName(event.target.value)}
-            placeholder="e.g. 5-Gallon Round"
+            placeholder="e.g. Plastic Gallon"
             required
             autoFocus
             className={inputClass}
@@ -85,6 +87,28 @@ export function ContainerTypeModal({ containerType, onClose, onSaved }: Containe
             placeholder="Optional"
             className={inputClass}
           />
+        </div>
+
+        <div>
+          <label htmlFor="type-key" className="mb-1 block text-sm font-medium text-slate-700">
+            Identifier key <span className="text-red-600">*</span>
+          </label>
+          <input
+            id="type-key"
+            type="text"
+            value={identifierKey}
+            onChange={(event) =>
+              setIdentifierKey(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))
+            }
+            placeholder="e.g. PG"
+            maxLength={10}
+            required
+            className={`${inputClass} font-mono`}
+          />
+          <p className="mt-1 text-xs text-slate-500">
+            Letters and numbers only (up to 10). Must be different for every type.
+            {isEditing && ' Changing it does not rename containers that already exist.'}
+          </p>
         </div>
 
         {isEditing && (

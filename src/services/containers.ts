@@ -22,17 +22,18 @@ export async function listContainers(): Promise<ContainerWithDetails[]> {
   }))
 }
 
-export async function createContainer(input: NewContainer): Promise<Container> {
-  const { data, error } = await supabase.from('containers').insert(input).select().single()
+// Saves all containers together: either every one is created, or none are.
+export async function createContainers(inputs: NewContainer[]): Promise<void> {
+  const { error } = await supabase.from('containers').insert(inputs)
 
   if (error) {
     if (isUniqueViolation(error)) {
-      throw new Error('A container with that number already exists.')
+      throw new Error(
+        'One or more of those container numbers already exist. Refresh the page and try again.',
+      )
     }
     throw error
   }
-
-  return data
 }
 
 // Only changes the status if the container is still in the expected one,

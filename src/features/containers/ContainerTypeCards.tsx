@@ -40,6 +40,9 @@ export function ContainerTypeCards({
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <h3 className="truncate font-semibold text-slate-900">{containerType.name}</h3>
+                <p className="mt-1 font-mono text-xs text-slate-500">
+                  Key: {containerType.identifier_key}
+                </p>
                 {containerType.description && (
                   <p className="mt-0.5 text-xs text-slate-500">{containerType.description}</p>
                 )}

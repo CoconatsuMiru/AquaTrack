@@ -14,10 +14,12 @@ export function ContainersTable({ containers, onRetire, onRestore }: ContainersT
     )
   }
 
+  // The height below fits the heading row plus 20 container rows.
+  // With more containers than that, the table scrolls inside this box.
   return (
-    <div className="overflow-x-auto">
+    <div className="max-h-[69rem] overflow-auto">
       <table className="w-full text-left text-sm">
-        <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+        <thead className="sticky top-0 z-10 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
             <th className="px-6 py-3 font-medium">Container</th>
             <th className="px-6 py-3 font-medium">Type</th>

@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Plus, Search } from 'lucide-react'
+import { ConfirmModal } from '../components/ConfirmModal'
 import { PageHeader } from '../components/PageHeader'
 import { AddContainerModal } from '../features/containers/AddContainerModal'
 import { ContainersTable } from '../features/containers/ContainersTable'
@@ -15,6 +16,8 @@ import {
 } from '../services/containers'
 import type { ContainerStatus, ContainerType } from '../types/models'
 
+const ERROR_VISIBLE_MS = 5000
+
 export function ContainersPage() {
   const typesState = useContainerTypes()
   const containersState = useContainers()
@@ -22,9 +25,18 @@ export function ContainersPage() {
   // 'new' = adding a type, a ContainerType = editing it, null = closed
   const [typeModal, setTypeModal] = useState<ContainerType | 'new' | null>(null)
   const [isContainerModalOpen, setIsContainerModalOpen] = useState(false)
+  const [containerToRetire, setContainerToRetire] = useState<ContainerWithDetails | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | ContainerStatus>('all')
   const [actionError, setActionError] = useState('')
+
+  // Hide the error message by itself a few seconds after it appears
+  useEffect(() => {
+    if (!actionError) return
+
+    const timer = setTimeout(() => setActionError(''), ERROR_VISIBLE_MS)
+    return () => clearTimeout(timer)
+  }, [actionError])
 
   const isLoading = typesState.isLoading || containersState.isLoading
   const errorMessage = typesState.errorMessage || containersState.errorMessage
@@ -47,27 +59,27 @@ export function ContainersPage() {
     containersState.reload()
   }
 
-  async function runContainerAction(action: () => Promise<void>) {
+  // Runs when "Retire" is confirmed in the modal.
+  // The table reloads either way, so it always shows the real current state.
+  // If retiring fails, the error is shown inside the modal.
+  async function confirmRetire() {
+    if (!containerToRetire) return
+
+    try {
+      await retireContainer(containerToRetire.id)
+    } finally {
+      containersState.reload()
+    }
+  }
+
+  async function handleRestore(container: ContainerWithDetails) {
     setActionError('')
     try {
-      await action()
-      containersState.reload()
+      await restoreContainer(container.id)
     } catch (error) {
       setActionError(getErrorMessage(error))
     }
-  }
-
-  function handleRetire(container: ContainerWithDetails) {
-    const confirmed = window.confirm(
-      `Retire container ${container.container_number}? It will no longer be available to assign.`,
-    )
-    if (confirmed) {
-      runContainerAction(() => retireContainer(container.id))
-    }
-  }
-
-  function handleRestore(container: ContainerWithDetails) {
-    runContainerAction(() => restoreContainer(container.id))
+    containersState.reload()
   }
 
   return (
@@ -152,7 +164,7 @@ export function ContainersPage() {
 
             <ContainersTable
               containers={visibleContainers}
-              onRetire={handleRetire}
+              onRetire={setContainerToRetire}
               onRestore={handleRestore}
             />
           </div>
@@ -170,8 +182,26 @@ export function ContainersPage() {
       {isContainerModalOpen && (
         <AddContainerModal
           containerTypes={activeTypes}
+          existingNumbers={containersState.containers.map((container) => container.container_number)}
           onClose={() => setIsContainerModalOpen(false)}
           onCreated={containersState.reload}
+        />
+      )}
+
+      {containerToRetire && (
+        <ConfirmModal
+          title="Retire container"
+          message={
+            <>
+              Retire container{' '}
+              <span className="font-mono font-semibold">{containerToRetire.container_number}</span>?
+              It will no longer be available to assign. You can restore it later.
+            </>
+          }
+          confirmLabel="Retire"
+          tone="danger"
+          onConfirm={confirmRetire}
+          onClose={() => setContainerToRetire(null)}
         />
       )}
     </>
