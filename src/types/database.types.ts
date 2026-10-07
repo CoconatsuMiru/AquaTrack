@@ -178,6 +178,28 @@ export type Database = {
         }
         Relationships: []
       }
+      container_type_summary: {
+        Row: {
+          container_type_id: string
+          name: string
+          identifier_key: string
+          is_active: boolean
+          total_count: number
+          available_count: number
+          with_customer_count: number
+          retired_count: number
+        }
+        Relationships: []
+      }
+      customer_holdings: {
+        Row: {
+          customer_id: string
+          full_name: string
+          phone: string | null
+          containers_held: number
+        }
+        Relationships: []
+      }
     }
     Functions: {
       assign_containers: {

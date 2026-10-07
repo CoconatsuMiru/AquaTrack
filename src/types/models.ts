@@ -11,6 +11,10 @@ export type Transaction = Tables['transactions']['Row']
 // One line of the history screen: a transaction with its container and customer details
 export type TransactionHistoryRow = Views['transaction_history']['Row']
 
+// Dashboard numbers: containers per status for one type, and customers holding containers
+export type ContainerTypeSummary = Views['container_type_summary']['Row']
+export type CustomerHolding = Views['customer_holdings']['Row']
+
 export type ContainerStatus = Container['status']
 export type TransactionType = Transaction['transaction_type']
 
