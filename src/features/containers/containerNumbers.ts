@@ -1,96 +1,179 @@
 export const MAX_BATCH_SIZE = 1000
 
-export type NumberRange = {
-  from: number
-  to: number
-  // How many digits to pad to, e.g. 2 gives "01"
-  width: number
+export type SuffixMode = 'range' | 'list'
+
+// What the staff member has typed into the "which containers?" fields
+export type SuffixInputState = {
+  mode: SuffixMode
+  minText: string
+  maxText: string
+  listText: string
 }
 
-export type RangeResult = { ok: true; range: NumberRange } | { ok: false; message: string }
-
-export type NumberListResult = { ok: true; numbers: number[] } | { ok: false; message: string }
-
-// fromText / toText are exactly what the user typed, e.g. "01" and "99".
-// If toText is empty, the range is just the single number in fromText.
-export function parseNumberRange(fromText: string, toText: string): RangeResult {
-  const from = fromText.trim()
-  const to = toText.trim() === '' ? from : toText.trim()
-
-  if (from === '') {
-    return { ok: false, message: 'Enter the min number.' }
-  }
-
-  if (!/^\d{1,6}$/.test(from) || !/^\d{1,6}$/.test(to)) {
-    return { ok: false, message: 'Numbers must be digits only (up to 6 digits).' }
-  }
-
-  const fromNumber = Number(from)
-  const toNumber = Number(to)
-
-  if (toNumber < fromNumber) {
-    return { ok: false, message: 'The max number cannot be smaller than the min number.' }
-  }
-
-  if (toNumber - fromNumber + 1 > MAX_BATCH_SIZE) {
-    return { ok: false, message: `You can use at most ${MAX_BATCH_SIZE} containers at a time.` }
-  }
-
-  return {
-    ok: true,
-    range: { from: fromNumber, to: toNumber, width: Math.max(from.length, to.length) },
-  }
+export const emptySuffixInput: SuffixInputState = {
+  mode: 'range',
+  minText: '',
+  maxText: '',
+  listText: '',
 }
 
-// Reads a list like "01, 02, 09, 20" (commas, spaces or semicolons between numbers).
-// Duplicates are ignored.
-export function parseNumberList(text: string): NumberListResult {
-  const tokens = text.split(/[\s,;]+/).filter(Boolean)
+// The result of reading what was typed:
+// nothing typed yet, a problem to show, or the list of codes (e.g. ["01", "02"] or ["TR", "AA"])
+export type SuffixResult =
+  | { status: 'empty' }
+  | { status: 'error'; message: string }
+  | { status: 'ok'; suffixes: string[] }
 
-  if (tokens.length === 0) {
-    return { ok: false, message: 'Enter at least one number.' }
+type SuffixKind = 'digits' | 'letters'
+
+const CODE_HELP = 'Use digits only (up to 6) or letters only (up to 3), like 01 or TR.'
+const TOO_MANY = `You can use at most ${MAX_BATCH_SIZE} containers at a time.`
+
+// A code is digits only ("01") or letters only ("TR"), never a mix
+function getKind(text: string): SuffixKind | null {
+  if (/^\d{1,6}$/.test(text)) return 'digits'
+  if (/^[A-Z]{1,3}$/.test(text)) return 'letters'
+  return null
+}
+
+// Letters count like spreadsheet columns: A = 1 ... Z = 26, AA = 27, AB = 28 ...
+function lettersToNumber(letters: string): number {
+  let value = 0
+  for (const letter of letters) {
+    value = value * 26 + (letter.charCodeAt(0) - 64)
+  }
+  return value
+}
+
+function numberToLetters(value: number): string {
+  let rest = value
+  let letters = ''
+  while (rest > 0) {
+    rest -= 1
+    letters = String.fromCharCode(65 + (rest % 26)) + letters
+    rest = Math.floor(rest / 26)
+  }
+  return letters
+}
+
+// Lets "1", "01" and "001" count as the same code, and "tr" as "TR"
+export function normalizeSuffix(suffix: string): string {
+  return /^\d+$/.test(suffix) ? String(Number(suffix)) : suffix.toUpperCase()
+}
+
+function parseRange(minText: string, maxText: string): SuffixResult {
+  const from = minText.trim().toUpperCase()
+  // With no max, the range is just the single code in "min"
+  const to = maxText.trim() === '' ? from : maxText.trim().toUpperCase()
+
+  const fromKind = getKind(from)
+  const toKind = getKind(to)
+
+  if (!fromKind || !toKind) {
+    return { status: 'error', message: CODE_HELP }
   }
 
-  const numbers: number[] = []
+  if (fromKind !== toKind) {
+    return { status: 'error', message: 'The min and max must both be numbers or both be letters.' }
+  }
 
-  for (const token of tokens) {
-    if (!/^\d{1,6}$/.test(token)) {
+  const suffixes: string[] = []
+
+  if (fromKind === 'digits') {
+    const first = Number(from)
+    const last = Number(to)
+
+    if (last < first) {
+      return { status: 'error', message: 'The max cannot be smaller than the min.' }
+    }
+    if (last - first + 1 > MAX_BATCH_SIZE) {
+      return { status: 'error', message: TOO_MANY }
+    }
+
+    // Pad to the longer of the two typed numbers, so 01 and 99 give 01, 02, ... 99
+    const width = Math.max(from.length, to.length)
+    for (let number = first; number <= last; number++) {
+      suffixes.push(String(number).padStart(width, '0'))
+    }
+  } else {
+    const first = lettersToNumber(from)
+    const last = lettersToNumber(to)
+
+    if (last < first) {
       return {
-        ok: false,
-        message: `"${token}" is not a valid number. Use digits only, separated by commas.`,
+        status: 'error',
+        message: 'The max cannot come before the min (for example, AA comes before AZ).',
       }
     }
+    if (last - first + 1 > MAX_BATCH_SIZE) {
+      return { status: 'error', message: TOO_MANY }
+    }
 
-    const number = Number(token)
-    if (!numbers.includes(number)) {
-      numbers.push(number)
+    for (let value = first; value <= last; value++) {
+      suffixes.push(numberToLetters(value))
     }
   }
 
-  if (numbers.length > MAX_BATCH_SIZE) {
-    return { ok: false, message: `You can use at most ${MAX_BATCH_SIZE} containers at a time.` }
+  return { status: 'ok', suffixes }
+}
+
+// Reads "01, 02, 09, 20" or "TR, AA, KL" (commas, spaces or semicolons between codes)
+function parseList(text: string): SuffixResult {
+  const tokens = text.toUpperCase().split(/[\s,;]+/).filter(Boolean)
+
+  if (tokens.length === 0) {
+    return { status: 'empty' }
   }
 
-  return { ok: true, numbers }
-}
+  const suffixes: string[] = []
+  const seen = new Set<string>()
 
-// 1 to 5 -> [1, 2, 3, 4, 5]
-export function rangeToNumbers(range: NumberRange): number[] {
-  const numbers: number[] = []
-  for (let number = range.from; number <= range.to; number++) {
-    numbers.push(number)
+  for (const token of tokens) {
+    if (!getKind(token)) {
+      return { status: 'error', message: `"${token}" is not valid. ${CODE_HELP}` }
+    }
+
+    // Ignore duplicates
+    const key = normalizeSuffix(token)
+    if (!seen.has(key)) {
+      seen.add(key)
+      suffixes.push(token)
+    }
   }
-  return numbers
+
+  if (suffixes.length > MAX_BATCH_SIZE) {
+    return { status: 'error', message: TOO_MANY }
+  }
+
+  return { status: 'ok', suffixes }
 }
 
-// ("PG", 7, width 2) -> "PG-07"
-export function formatContainerNumber(identifierKey: string, number: number, width: number): string {
-  return `${identifierKey}-${String(number).padStart(width, '0')}`
+export function parseSuffixInput(input: SuffixInputState): SuffixResult {
+  if (input.mode === 'range') {
+    if (input.minText.trim() === '') {
+      return { status: 'empty' }
+    }
+    return parseRange(input.minText, input.maxText)
+  }
+
+  return parseList(input.listText)
 }
 
-// ("PG", 1 to 99, width 2) -> ["PG-01", "PG-02", ... "PG-99"]
-export function buildContainerNumbers(identifierKey: string, range: NumberRange): string[] {
-  return rangeToNumbers(range).map((number) =>
-    formatContainerNumber(identifierKey, number, range.width),
-  )
+// ("DD", ["TR", "AA"]) -> ["DD-TR", "DD-AA"]
+export function buildContainerNumbers(identifierKey: string, suffixes: string[]): string[] {
+  return suffixes.map((suffix) => `${identifierKey}-${suffix}`)
+}
+
+// Shows at most `limit` items so a long list doesn't flood the screen
+export function summarizeList(items: string[], limit = 10): string {
+  if (items.length <= limit) return items.join(', ')
+  return `${items.slice(0, limit).join(', ')} … and ${items.length - limit} more`
+}
+
+// "OG-01 to OG-19" for a range, or the list of numbers for specific ones
+export function describeContainers(mode: SuffixMode, containerNumbers: string[]): string {
+  if (mode === 'range' && containerNumbers.length > 1) {
+    return `${containerNumbers[0]} to ${containerNumbers[containerNumbers.length - 1]}`
+  }
+  return summarizeList(containerNumbers)
 }

@@ -15,9 +15,9 @@ export function Modal({ title, description, onClose, children }: ModalProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-xl"
+        className="flex max-h-[calc(100vh-2rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
       >
-        <div className="flex items-start justify-between bg-brand-50 px-6 py-5">
+        <div className="flex shrink-0 items-start justify-between bg-brand-50 px-6 py-5">
           <div>
             <h2 id="modal-title" className="text-lg font-semibold text-slate-900">
               {title}
@@ -34,7 +34,7 @@ export function Modal({ title, description, onClose, children }: ModalProps) {
           </button>
         </div>
 
-        <div className="px-6 py-6">{children}</div>
+        <div className="overflow-y-auto px-6 py-6">{children}</div>
       </div>
     </div>
   )

@@ -3,7 +3,14 @@ import { Modal } from '../../components/Modal'
 import { getErrorMessage } from '../../lib/errors'
 import { createContainers } from '../../services/containers'
 import type { ContainerType } from '../../types/models'
-import { buildContainerNumbers, parseNumberRange } from './containerNumbers'
+import {
+  buildContainerNumbers,
+  describeContainers,
+  emptySuffixInput,
+  parseSuffixInput,
+  type SuffixInputState,
+} from './containerNumbers'
+import { SuffixInput } from './SuffixInput'
 
 type AddContainerModalProps = {
   // Only active types should be passed in
@@ -17,14 +24,6 @@ type AddContainerModalProps = {
 const inputClass =
   'w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200'
 
-const prefixClass =
-  'rounded-lg bg-slate-100 px-3 py-2 font-mono text-sm font-semibold text-slate-700'
-
-// Keep only digits, so the number fields can't contain letters
-function digitsOnly(value: string) {
-  return value.replace(/\D/g, '')
-}
-
 export function AddContainerModal({
   containerTypes,
   existingNumbers,
@@ -32,28 +31,32 @@ export function AddContainerModal({
   onCreated,
 }: AddContainerModalProps) {
   const [typeId, setTypeId] = useState(containerTypes[0]?.id ?? '')
-  const [minText, setMinText] = useState('')
-  const [maxText, setMaxText] = useState('')
+  const [input, setInput] = useState<SuffixInputState>(emptySuffixInput)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const minInputRef = useRef<HTMLInputElement>(null)
+  const firstInputRef = useRef<HTMLInputElement>(null)
 
   const selectedType = containerTypes.find((containerType) => containerType.id === typeId)
   const existing = new Set(existingNumbers)
 
-  // What would be created with the numbers typed so far
-  const rangeResult = parseNumberRange(minText, maxText)
-  const rangeHint = minText !== '' && !rangeResult.ok ? rangeResult.message : ''
+  // What would be created with what has been typed so far
+  const parsed = parseSuffixInput(input)
 
   let plan: { all: string[]; missing: string[] } | null = null
-  if (selectedType && rangeResult.ok) {
-    const all = buildContainerNumbers(selectedType.identifier_key, rangeResult.range)
+  if (selectedType && parsed.status === 'ok') {
+    const all = buildContainerNumbers(selectedType.identifier_key, parsed.suffixes)
     plan = { all, missing: all.filter((number) => !existing.has(number)) }
   }
 
   function handleTypeChange(newTypeId: string) {
     setTypeId(newTypeId)
+    setErrorMessage('')
+    setSuccessMessage('')
+  }
+
+  function handleInputChange(next: SuffixInputState) {
+    setInput(next)
     setErrorMessage('')
     setSuccessMessage('')
   }
@@ -65,12 +68,17 @@ export function AddContainerModal({
 
     if (!selectedType) return
 
-    if (!rangeResult.ok) {
-      setErrorMessage(rangeResult.message)
+    if (parsed.status === 'empty') {
+      setErrorMessage('Enter the containers to add.')
       return
     }
 
-    const all = buildContainerNumbers(selectedType.identifier_key, rangeResult.range)
+    if (parsed.status === 'error') {
+      setErrorMessage(parsed.message)
+      return
+    }
+
+    const all = buildContainerNumbers(selectedType.identifier_key, parsed.suffixes)
     const missing = all.filter((number) => !existing.has(number))
 
     if (missing.length === 0) {
@@ -96,10 +104,9 @@ export function AddContainerModal({
           '. You can add more.',
       )
 
-      // Stay open and get ready for the next batch
-      setMinText('')
-      setMaxText('')
-      minInputRef.current?.focus()
+      // Stay open and get ready for the next batch (keeping the chosen mode)
+      setInput({ ...emptySuffixInput, mode: input.mode })
+      firstInputRef.current?.focus()
     } catch (error) {
       setErrorMessage(getErrorMessage(error))
     } finally {
@@ -107,15 +114,13 @@ export function AddContainerModal({
     }
   }
 
-  const first = plan?.all[0]
-  const last = plan?.all[plan.all.length - 1]
-  const span = plan && plan.all.length > 1 ? `${first} to ${last}` : first
+  const span = plan ? describeContainers(input.mode, plan.all) : ''
   const skippedCount = plan ? plan.all.length - plan.missing.length : 0
 
   return (
     <Modal
       title="Add Containers"
-      description="Register one container or a whole range at once"
+      description="Register one container or a whole batch at once"
       onClose={onClose}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -139,64 +144,16 @@ export function AddContainerModal({
         </div>
 
         {selectedType && (
-          <>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label
-                  htmlFor="min-number"
-                  className="mb-1 block text-sm font-medium text-slate-700"
-                >
-                  Min number <span className="text-red-600">*</span>
-                </label>
-                <div className="flex items-center gap-2">
-                  <span className={prefixClass}>{selectedType.identifier_key}-</span>
-                  <input
-                    id="min-number"
-                    ref={minInputRef}
-                    type="text"
-                    inputMode="numeric"
-                    value={minText}
-                    onChange={(event) => setMinText(digitsOnly(event.target.value))}
-                    placeholder="01"
-                    maxLength={6}
-                    required
-                    autoFocus
-                    className={inputClass}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="max-number"
-                  className="mb-1 block text-sm font-medium text-slate-700"
-                >
-                  Max number
-                </label>
-                <div className="flex items-center gap-2">
-                  <span className={prefixClass}>{selectedType.identifier_key}-</span>
-                  <input
-                    id="max-number"
-                    type="text"
-                    inputMode="numeric"
-                    value={maxText}
-                    onChange={(event) => setMaxText(digitsOnly(event.target.value))}
-                    placeholder="99"
-                    maxLength={6}
-                    className={inputClass}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <p className="text-xs text-slate-500">
-              Enter a min and a max to create every number in between, for example 01 and 99. Leave
-              the max empty to add a single container. Type the leading zeros you want to see.
-            </p>
-          </>
+          <SuffixInput
+            idPrefix="add-container"
+            identifierKey={selectedType.identifier_key}
+            value={input}
+            onChange={handleInputChange}
+            inputRef={firstInputRef}
+          />
         )}
 
-        {rangeHint && <p className="text-sm text-amber-700">{rangeHint}</p>}
+        {parsed.status === 'error' && <p className="text-sm text-amber-700">{parsed.message}</p>}
 
         {plan && plan.missing.length > 0 && (
           <p className="rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-800">

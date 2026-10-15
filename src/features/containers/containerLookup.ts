@@ -1,18 +1,15 @@
 import type { ContainerWithDetails } from '../../services/containers'
 import type { ContainerType } from '../../types/models'
+import { normalizeSuffix } from './containerNumbers'
 
-export type ContainerIndex = {
-  // Containers of one type, found by their number (so "1", "01" and "001" all find PG-01)
-  byNumber: Map<number, ContainerWithDetails>
-  // How many digits that type's numbers usually have, used when showing missing numbers
-  width: number
-}
+// The containers of one type, found by their code (so "1", "01" and "001" all find OG-01)
+export type ContainerIndex = Map<string, ContainerWithDetails>
 
 export type ContainerResolution = {
   available: ContainerWithDetails[]
   unavailable: ContainerWithDetails[]
-  // Numbers with no container at all
-  missing: number[]
+  // Full numbers (like "OG-07") that no container has
+  missing: string[]
 }
 
 export function buildContainerIndex(
@@ -20,33 +17,33 @@ export function buildContainerIndex(
   containerType: ContainerType,
 ): ContainerIndex {
   const prefix = `${containerType.identifier_key}-`
-  const byNumber = new Map<number, ContainerWithDetails>()
-  let width = 2
+  const index: ContainerIndex = new Map()
 
   for (const container of containers) {
     if (container.container_type_id !== containerType.id) continue
     if (!container.container_number.startsWith(prefix)) continue
 
-    const digits = container.container_number.slice(prefix.length)
-    if (!/^\d+$/.test(digits)) continue
-
-    byNumber.set(Number(digits), container)
-    width = Math.max(width, digits.length)
+    const suffix = container.container_number.slice(prefix.length)
+    index.set(normalizeSuffix(suffix), container)
   }
 
-  return { byNumber, width }
+  return index
 }
 
-export function resolveContainers(index: ContainerIndex, numbers: number[]): ContainerResolution {
+export function resolveContainers(
+  index: ContainerIndex,
+  identifierKey: string,
+  suffixes: string[],
+): ContainerResolution {
   const available: ContainerWithDetails[] = []
   const unavailable: ContainerWithDetails[] = []
-  const missing: number[] = []
+  const missing: string[] = []
 
-  for (const number of numbers) {
-    const container = index.byNumber.get(number)
+  for (const suffix of suffixes) {
+    const container = index.get(normalizeSuffix(suffix))
 
     if (!container) {
-      missing.push(number)
+      missing.push(`${identifierKey}-${suffix}`)
     } else if (container.status === 'available') {
       available.push(container)
     } else {
