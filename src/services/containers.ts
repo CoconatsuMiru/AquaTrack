@@ -1,4 +1,5 @@
 import { isUniqueViolation } from '../lib/errors'
+import { fetchAllRows } from '../lib/fetchAllRows'
 import { supabase } from '../lib/supabase'
 import type { Container, ContainerStatus, NewContainer } from '../types/models'
 
@@ -8,14 +9,15 @@ export type ContainerWithDetails = Container & {
 }
 
 export async function listContainers(): Promise<ContainerWithDetails[]> {
-  const { data, error } = await supabase
-    .from('containers')
-    .select('*, container_types(name), customers(full_name)')
-    .order('container_number')
+  const rows = await fetchAllRows((from, to) =>
+    supabase
+      .from('containers')
+      .select('*, container_types(name), customers(full_name)')
+      .order('container_number')
+      .range(from, to),
+  )
 
-  if (error) throw error
-
-  return data.map(({ container_types, customers, ...container }) => ({
+  return rows.map(({ container_types, customers, ...container }) => ({
     ...container,
     type_name: container_types?.name ?? 'Unknown type',
     customer_name: customers?.full_name ?? null,

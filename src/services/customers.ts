@@ -1,3 +1,4 @@
+import { fetchAllRows } from '../lib/fetchAllRows'
 import { supabase } from '../lib/supabase'
 import type { Customer, NewCustomer } from '../types/models'
 
@@ -6,14 +7,16 @@ export type CustomerWithHeldCount = Customer & {
 }
 
 export async function listCustomers(): Promise<CustomerWithHeldCount[]> {
-  const { data, error } = await supabase
-    .from('customers')
-    .select('*, containers(count)')
-    .order('full_name')
+  const rows = await fetchAllRows((from, to) =>
+    supabase
+      .from('customers')
+      .select('*, containers(count)')
+      .order('full_name')
+      .order('id')
+      .range(from, to),
+  )
 
-  if (error) throw error
-
-  return data.map(({ containers, ...customer }) => ({
+  return rows.map(({ containers, ...customer }) => ({
     ...customer,
     containers_held: containers[0]?.count ?? 0,
   }))
