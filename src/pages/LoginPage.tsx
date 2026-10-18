@@ -30,10 +30,14 @@ export function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-page px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-linear-to-br from-brand-50 via-page to-brand-100 px-4">
+      {/* Two soft glows that drift slowly in the background */}
+      <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 animate-drift rounded-full bg-brand-200/60 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-24 -right-16 h-80 w-80 animate-drift rounded-full bg-brand-500/20 blur-3xl [animation-delay:-7s]" />
+
+      <div className="relative w-full max-w-sm animate-fade-up rounded-2xl border border-slate-200 bg-white p-8 shadow-lg">
         <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-600 text-white">
+          <div className="flex h-10 w-10 animate-float items-center justify-center rounded-lg bg-brand-600 text-white">
             <Droplet size={20} />
           </div>
           <div>
@@ -73,7 +77,7 @@ export function LoginPage() {
             />
           </div>
 
-          {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
+          {errorMessage && <p className="animate-fade-in text-sm text-red-600">{errorMessage}</p>}
 
           <button
             type="submit"

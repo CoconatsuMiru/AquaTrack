@@ -28,7 +28,7 @@ export function DashboardPage() {
           <StatCards summaries={summaries} holderCount={topHolders.total} />
           <TypeBreakdownCards summaries={summaries} />
 
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="stagger grid gap-6 lg:grid-cols-2">
             <TopHoldersCard topHolders={topHolders} />
             <RecentActivityCard rows={recentActivity} />
           </div>

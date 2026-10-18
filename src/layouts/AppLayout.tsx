@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { AssignContainerModal } from '../features/transactions/AssignContainerModal'
 import { ReturnContainerModal } from '../features/transactions/ReturnContainerModal'
 import { Sidebar } from './Sidebar'
@@ -9,6 +9,7 @@ type ActiveModal = 'assign' | 'return' | null
 
 export function AppLayout() {
   const [activeModal, setActiveModal] = useState<ActiveModal>(null)
+  const { pathname } = useLocation()
 
   return (
     <div className="flex min-h-screen bg-page">
@@ -18,7 +19,7 @@ export function AppLayout() {
           onAssign={() => setActiveModal('assign')}
           onReturn={() => setActiveModal('return')}
         />
-        <main className="flex-1 p-6 lg:p-8">
+        <main key={pathname} className="flex-1 animate-page-in p-6 lg:p-8">
           <Outlet />
         </main>
       </div>

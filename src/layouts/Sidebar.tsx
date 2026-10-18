@@ -42,14 +42,14 @@ export function Sidebar() {
             end={to === '/'}
             className={({ isActive }) =>
               [
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                 isActive
                   ? 'bg-brand-600 text-white shadow-sm'
                   : 'text-slate-700 hover:bg-brand-100',
               ].join(' ')
             }
           >
-            <Icon size={18} />
+            <Icon size={18} className="transition-transform duration-200 group-hover:scale-110" />
             {label}
           </NavLink>
         ))}

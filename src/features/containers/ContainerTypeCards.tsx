@@ -22,7 +22,7 @@ export function ContainerTypeCards({
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {containerTypes.map((containerType) => {
         const ofThisType = containers.filter(
           (container) => container.container_type_id === containerType.id,
@@ -33,7 +33,7 @@ export function ContainerTypeCards({
         return (
           <div
             key={containerType.id}
-            className={`rounded-xl border border-slate-200 bg-white p-5 shadow-sm ${
+            className={`rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md ${
               containerType.is_active ? '' : 'opacity-70'
             }`}
           >

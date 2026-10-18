@@ -10,12 +10,12 @@ type ModalProps = {
 
 export function Modal({ title, description, onClose, children }: ModalProps) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex animate-fade-in items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className="flex max-h-[calc(100vh-2rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
+        className="flex max-h-[calc(100vh-2rem)] w-full max-w-lg animate-modal-in flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
       >
         <div className="flex shrink-0 items-start justify-between bg-brand-50 px-6 py-5">
           <div>

@@ -21,15 +21,15 @@ export function TypeBreakdownCards({ summaries }: TypeBreakdownCardsProps) {
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      {visible.map((summary) => {
+    <div className="stagger grid gap-4 lg:grid-cols-2">
+      {visible.map((summary, index) => {
         const percent = (value: number) =>
           summary.total_count === 0 ? 0 : (value / summary.total_count) * 100
 
         return (
           <div
             key={summary.container_type_id}
-            className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+            className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -45,19 +45,25 @@ export function TypeBreakdownCards({ summaries }: TypeBreakdownCardsProps) {
               </p>
             </div>
 
-            <div className="mt-4 flex h-2 overflow-hidden rounded-full bg-slate-100">
+            <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
+              {/* The coloured bar wipes in from the left shortly after the card appears */}
               <div
-                className="bg-emerald-500"
-                style={{ width: `${percent(summary.available_count)}%` }}
-              />
-              <div
-                className="bg-brand-500"
-                style={{ width: `${percent(summary.with_customer_count)}%` }}
-              />
-              <div
-                className="bg-slate-400"
-                style={{ width: `${percent(summary.retired_count)}%` }}
-              />
+                className="flex h-full animate-bar-reveal"
+                style={{ animationDelay: `${400 + index * 80}ms` }}
+              >
+                <div
+                  className="bg-emerald-500 transition-[width] duration-500 ease-out"
+                  style={{ width: `${percent(summary.available_count)}%` }}
+                />
+                <div
+                  className="bg-brand-500 transition-[width] duration-500 ease-out"
+                  style={{ width: `${percent(summary.with_customer_count)}%` }}
+                />
+                <div
+                  className="bg-slate-400 transition-[width] duration-500 ease-out"
+                  style={{ width: `${percent(summary.retired_count)}%` }}
+                />
+              </div>
             </div>
 
             <div className="mt-3 grid grid-cols-3 gap-2 text-sm">
